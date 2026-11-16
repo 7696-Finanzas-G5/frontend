@@ -1,0 +1,164 @@
+<div class="stack">
+  <!-- Línea de crédito -->
+  <section class="card kpis">
+    <div class="kpi"><span class="label">Límite de crédito</span><span class="value">{{ resumen().limite | money: moneda() }}</span></div>
+    <div class="kpi"><span class="label">Deuda vigente</span><span class="value">{{ resumen().deuda | money: moneda() }}</span></div>
+    <div class="kpi"><span class="label">Crédito disponible</span><span class="value text-ok">{{ resumen().disponible | money: moneda() }}</span></div>
+    @if (cond(); as k) {
+      <div class="kpi"><span class="label">Corte / Pago</span><span class="value">Día {{ k.diaCorte }} / Día {{ k.diaPago }}</span></div>
+    }
+  </section>
+
+  @if (resultado(); as r) {
+    <div class="alert alert-ok"><app-icon name="check" />
+      <div><strong>{{ r.titulo }}</strong> Imputación (prelación): 1° Mora {{ r.imp.mora | money: moneda() }} · 2° Interés compensatorio {{ r.imp.compensatorio | money: moneda() }} · 3° Capital {{ r.imp.capital | money: moneda() }} = <strong>{{ r.imp.total | money: moneda() }}</strong>. El capital pagado se libera como crédito disponible.</div>
+    </div>
+  }
+  @if (error()) { <div class="alert alert-danger"><app-icon name="alert" /> {{ error() }}</div> }
+
+  <!-- Resumen de cuenta al corte -->
+  <section class="card">
+    <div class="card-title">
+      <h2><app-icon name="user" /> Resumen de Cuenta al Corte</h2>
+      @if (ciclos().length > 1) {
+        <div class="ciclos">
+          @for (c of ciclos(); track c) {
+            <button type="button" class="btn btn-sm" [class.btn-primary]="c === ciclo()" [class.btn-outline]="c !== ciclo()" (click)="selectCiclo(c)">Vence {{ c | fecha }}</button>
+          }
+        </div>
+      }
+    </div>
+
+    @if (estado(); as e) {
+      <div class="form-grid summary">
+        <div class="field"><label>Cliente <app-help title="Cliente" text="Titular de la cuenta corriente de crédito." /></label>
+          <div class="ro"><app-icon name="user" [size]="16" /> {{ nombre() }}</div></div>
+        <div class="field"><label>Fecha de Corte <app-help title="Fecha de corte" text="Fecha en que se cerró el ciclo y se generó el listado de pago con las compras previas." /></label>
+          <div class="ro"><app-icon name="calendar" [size]="16" /> {{ e.fechaCorte | fecha }}</div></div>
+        <div class="field"><label>Fecha de Pago Pactada <app-help title="Fecha de pago" text="Fecha límite para pagar sin mora." /></label>
+          <div class="ro"><app-icon name="calendar" [size]="16" /> {{ e.fechaPago | fecha }}</div></div>
+        <div class="field"><label for="fe">Fecha Efectiva de Pago <app-help title="Fecha efectiva" text="Fecha real en que el cliente paga. Si es posterior a la fecha pactada se calculan días e intereses de mora." /></label>
+          <input id="fe" class="input" type="date" [ngModel]="fechaEfectiva()" (ngModelChange)="fechaEfectiva.set($event); resultado.set(null)" [min]="e.fechaPago" [readonly]="!allowPayments()" [class.late]="e.mora.diasMora > 0" />
+          @if (e.mora.diasMora > 0) { <span class="error">{{ e.mora.diasMora }} días de mora</span> }
+        </div>
+        <div class="field"><label>Tasa Compensatoria (i) <app-help title="Tasa compensatoria" text="Tasa pactada con la que se calcularon los intereses del ciclo." /></label>
+          <div class="ro"><app-icon name="percent" [size]="16" /> {{ e.condiciones.tasaCompensatoriaLabel }}</div></div>
+        <div class="field"><label>Tasa Moratoria Pactada (I) <app-help title="Tasa moratoria" text="Se aplica sobre el total exigible por cada día de atraso." /></label>
+          <div class="ro"><app-icon name="percent" [size]="16" /> {{ e.condiciones.tasaMoratoriaLabel }} (TEDm: {{ e.condiciones.tedMoratoria | pct: 7 }})</div></div>
+      </div>
+    } @else {
+      <p class="muted">No hay compras a fin de mes pendientes de pago.</p>
+    }
+  </section>
+
+  @if (estado(); as e) {
+    <!-- Detalle -->
+    <section class="card">
+      <div class="card-title"><h2><app-icon name="receipt" /> Detalle de Compras Ordenadas por Fecha e Intereses Acumulados</h2></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Fecha</th><th>Descripción de la Compra</th><th class="num">Capital (VA)</th><th class="num">Días al {{ e.fechaPago | fecha }}</th><th class="num">Interés Generado</th><th class="num">Total Ítem</th></tr></thead>
+          <tbody>
+            @for (l of e.liquidacion.lineas; track l.id) {
+              <tr>
+                <td><span class="cell-flex"><app-icon name="calendar" [size]="15" /> {{ l.fechaCompra | fecha }}</span></td>
+                <td><span class="cell-flex"><app-icon name="cart" [size]="15" /> {{ l.descripcion }} (Fin de mes)</span></td>
+                <td class="num">{{ l.capital | money: moneda() }}</td>
+                <td class="num">{{ l.dias }} días</td>
+                <td class="num">{{ l.interes | money: moneda() }}</td>
+                <td class="num"><strong>{{ l.total | money: moneda() }}</strong></td>
+              </tr>
+            }
+            @if (e.mora.diasMora > 0) {
+              <tr class="row-danger">
+                <td><span class="cell-flex"><app-icon name="calendar" [size]="15" /> {{ e.fechaEfectiva | fecha }}</span></td>
+                <td><span class="cell-flex"><app-icon name="alert" [size]="15" /> Intereses por Mora</span></td>
+                <td class="num">Base exigible:<br />{{ e.mora.base | money: moneda() }}</td>
+                <td class="num">{{ e.mora.diasMora }} días</td>
+                <td class="num">{{ e.mora.interesMoratorio | money: moneda() }}</td>
+                <td class="num">{{ e.mora.interesMoratorio | money: moneda() }}</td>
+              </tr>
+            }
+          </tbody>
+          <tfoot><tr><td colspan="2">Totales</td><td class="num">{{ e.liquidacion.capitalTotal | money: moneda() }}</td><td></td>
+            <td class="num">{{ e.liquidacion.interesTotal + e.mora.interesMoratorio | money: moneda() }}</td><td class="num">{{ e.mora.totalExigible | money: moneda() }}</td></tr></tfoot>
+        </table>
+      </div>
+    </section>
+
+    <!-- Liquidación -->
+    <section class="card">
+      <div class="card-title"><h2><app-icon name="wallet" /> Liquidación de Pago</h2></div>
+      <div class="liq">
+        <div class="total">
+          <strong>Pago Total a Realizar (VF)</strong>
+          <small>(Orden de imputación: 1° Mora {{ e.mora.interesMoratorio | money: moneda() }} + 2° Interés Comp. {{ e.liquidacion.interesTotal | money: moneda() }} + 3° Capital {{ e.liquidacion.capitalTotal | money: moneda() }})</small>
+          <span class="big">{{ e.mora.totalExigible | money: moneda() }}</span>
+        </div>
+        <div class="pay">
+          <div class="alert alert-danger"><app-icon name="alert" /><div><strong>Restricción activa:</strong><br />No se permiten <strong>pagos parciales</strong></div></div>
+          @if (allowPayments()) {
+            <div class="field">
+              <label for="monto">Monto recibido <app-help title="Monto" text="Debe coincidir exactamente con el pago total exigible." /></label>
+              <input id="monto" class="input" type="number" step="0.01" [ngModel]="montoPago()" (ngModelChange)="montoPago.set($event)" />
+            </div>
+            <button class="btn btn-primary btn-lg" (click)="pagarCiclo()"><app-icon name="card" /> Registrar Pago Total Único ({{ e.mora.totalExigible | money: moneda() }})</button>
+          } @else {
+            <p class="muted">Acérquese a la tienda para realizar su pago.</p>
+          }
+        </div>
+      </div>
+    </section>
+  }
+
+  <!-- Cuotas -->
+  <section class="card">
+    <div class="card-title"><h2><app-icon name="calendar" /> Cuotas Pendientes (Método Francés)</h2></div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Compra</th><th>Cuota</th><th>Vencimiento</th><th class="num">Interés</th><th class="num">Amortización</th><th class="num">Cuota (R)</th><th class="num">Mora</th><th class="num">Total exigible</th>@if (allowPayments()) { <th></th> }</tr></thead>
+        <tbody>
+          @for (p of cuotasPend(); track p.cuota.id) {
+            <tr [class.row-danger]="p.mora.diasMora > 0">
+              <td>{{ p.descripcion }}</td>
+              <td>{{ p.cuota.numeroCuota }} / {{ p.compra.numeroCuotas }}</td>
+              <td>{{ p.cuota.fechaVencimiento | fecha }}</td>
+              <td class="num">{{ p.cuota.interesPeriodo | money: moneda() }}</td>
+              <td class="num">{{ p.cuota.amortizacion | money: moneda() }}</td>
+              <td class="num">{{ p.cuota.montoCuota | money: moneda() }}</td>
+              <td class="num">{{ p.mora.interesMoratorio | money: moneda() }}@if (p.mora.diasMora > 0) { <br /><small>{{ p.mora.diasMora }} días</small> }</td>
+              <td class="num"><strong>{{ p.mora.totalExigible | money: moneda() }}</strong></td>
+              @if (allowPayments()) {
+                <td><button class="btn btn-sm btn-outline" [disabled]="!p.pagable" (click)="pagarCuota(p.cuota, p.mora.totalExigible)" [title]="p.pagable ? 'Pagar cuota' : 'Pague primero la cuota anterior'">Pagar</button></td>
+              }
+            </tr>
+          } @empty { <tr><td [attr.colspan]="allowPayments() ? 9 : 8" class="empty">No hay cuotas pendientes.</td></tr> }
+        </tbody>
+      </table>
+    </div>
+    <p class="muted note">La mora de las cuotas se calcula con la fecha efectiva de pago indicada arriba (o la fecha de hoy si no hay ciclo seleccionado).</p>
+  </section>
+
+  <!-- Historial -->
+  <section class="card">
+    <div class="card-title"><h2><app-icon name="clock" /> Historial de Pagos</h2></div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Fecha de pago</th><th>Concepto</th><th class="num">Días mora</th><th class="num">Mora</th><th class="num">Int. compensatorio</th><th class="num">Capital</th><th class="num">Total</th></tr></thead>
+        <tbody>
+          @for (p of historial(); track p.id) {
+            <tr>
+              <td>{{ p.fechaHoraPago | fecha }}</td>
+              <td>{{ p.idLiquidacion ? 'Liquidación fin de mes' : 'Cuota' }}</td>
+              <td class="num">{{ p.diasMora }}</td>
+              <td class="num">{{ p.interesMoratorioPagado | money: moneda() }}</td>
+              <td class="num">{{ p.interesCompensatorioPagado | money: moneda() }}</td>
+              <td class="num">{{ p.capitalPagado | money: moneda() }}</td>
+              <td class="num"><strong>{{ p.montoTotalPagado | money: moneda() }}</strong></td>
+            </tr>
+          } @empty { <tr><td colspan="7" class="empty">Sin pagos registrados.</td></tr> }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

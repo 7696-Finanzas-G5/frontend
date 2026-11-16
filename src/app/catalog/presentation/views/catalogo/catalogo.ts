@@ -209,7 +209,7 @@ export class Catalogo {
     this.form.reset();
   }
 
-  save() {
+  async save() {
     this.submitted.set(true);
     // Los productos de demostración no tienen imagen: se exige solo al registrar o si se edita uno que ya la tenía.
     const id = this.editingId();
@@ -229,7 +229,7 @@ export class Catalogo {
       estado: v.activo ? 'ACTIVO' : 'INACTIVO',
     } as const;
     try {
-      const p = id ? this.catalogo.actualizar(id, datos) : this.catalogo.registrar(datos);
+      const p = id ? await this.catalogo.actualizar(id, datos) : await this.catalogo.registrar(datos);
       this.reset();
       this.msg.set({ ok: true, text: id ? `"${p.descripcion}" actualizado.` : `"${p.descripcion}" registrado en el catálogo.` });
     } catch (e) {
@@ -237,9 +237,13 @@ export class Catalogo {
     }
   }
 
-  toggle(p: ProductoServicio) {
+  async toggle(p: ProductoServicio) {
     const alta = p.estado !== 'ACTIVO';
     if (!confirm(`¿Desea dar de ${alta ? 'alta' : 'baja'} a "${p.descripcion}"?`)) return;
-    this.catalogo.cambiarEstado(p.id, alta);
+    try {
+      await this.catalogo.cambiarEstado(p.id, alta);
+    } catch (e) {
+      this.msg.set({ ok: false, text: (e as Error).message });
+    }
   }
 }

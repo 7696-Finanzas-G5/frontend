@@ -1,47 +1,49 @@
-import { Injectable, computed, inject } from '@angular/core';
-import { AuditService } from '../../audit/application/audit.service';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { AuthService } from '../../iam/application/auth.service';
-import { DomainError } from '../../shared/domain/domain-error';
 import { DatosProducto, ProductoServicio, validarProducto } from '../domain/model/producto-servicio';
-import { ProductoRepository } from '../domain/repositories/producto.repository';
+import { CatalogoApi } from '../infrastructure/catalogo.api';
 
 /** Casos de uso del Administrador del Negocio: alta y baja de productos y servicios. */
 @Injectable({ providedIn: 'root' })
 export class CatalogoService {
-  private readonly repo = inject(ProductoRepository);
+  private readonly api = inject(CatalogoApi);
   private readonly auth = inject(AuthService);
-  private readonly audit = inject(AuditService);
+  private readonly _productos = signal<ProductoServicio[]>([]);
 
   /** Catálogo de la tienda del usuario en sesión. */
-  readonly productosDeMiTienda = computed(() => this.repo.all().filter((p) => p.idTienda === this.auth.tiendaId()));
-  readonly activosDeMiTienda = computed(() => this.productosDeMiTienda().filter((p) => p.estado === 'ACTIVO'));
+  readonly productosDeMiTienda = this._productos.asReadonly();
+  readonly activosDeMiTienda = computed(() => this._productos().filter((p) => p.estado === 'ACTIVO'));
+
+  constructor() {
+    effect(() => {
+      const rol = this.auth.rol();
+      untracked(() => (rol === 'ADMIN_NEGOCIO' ? this.load().catch(() => undefined) : this._productos.set([])));
+    });
+  }
+
+  async load(): Promise<void> {
+    this._productos.set(await this.api.listar());
+  }
 
   findById(id: number | null | undefined): ProductoServicio | undefined {
-    return this.repo.findById(id);
+    return id == null ? undefined : this._productos().find((p) => p.id === id);
   }
 
-  registrar(datos: DatosProducto): ProductoServicio {
-    const idTienda = this.auth.tiendaId();
-    if (idTienda == null) throw new DomainError('El usuario no pertenece a una tienda.');
-    const d = validarProducto(datos, true);
-    const n = this.repo.findByTienda(idTienda).filter((p) => p.tipoItem === d.tipoItem).length + 1;
-    const codigo = `${d.tipoItem === 'SERVICIO' ? 'S' : 'P'}-${String(n).padStart(3, '0')}`;
-    const p = this.repo.add({ ...d, idTienda, codigo });
-    this.audit.registrar(this.auth.userIdValue(), 'ALTA', 'producto_servicio', p.id, d.descripcion);
+  async registrar(datos: DatosProducto): Promise<ProductoServicio> {
+    const p = await this.api.registrar(validarProducto(datos, true));
+    await this.load();
     return p;
   }
 
-  actualizar(id: number, datos: DatosProducto): ProductoServicio {
-    const actual = this.repo.findById(id);
-    if (!actual) throw new DomainError('Producto no encontrado.');
+  async actualizar(id: number, datos: DatosProducto): Promise<ProductoServicio> {
     // Se exige imagen si el producto ya la tenía (los datos de demostración no tienen imagen)
-    const p = this.repo.update(id, validarProducto(datos, !!actual.imagenUrl));
-    this.audit.registrar(this.auth.userIdValue(), 'EDITAR', 'producto_servicio', id, p.descripcion);
+    const p = await this.api.actualizar(id, validarProducto(datos, !!this.findById(id)?.imagenUrl));
+    await this.load();
     return p;
   }
 
-  cambiarEstado(id: number, activo: boolean): void {
-    const p = this.repo.update(id, { estado: activo ? 'ACTIVO' : 'INACTIVO' });
-    this.audit.registrar(this.auth.userIdValue(), activo ? 'ALTA' : 'BAJA', 'producto_servicio', id, p.descripcion);
+  async cambiarEstado(id: number, activo: boolean): Promise<void> {
+    await this.api.cambiarEstado(id, activo);
+    await this.load();
   }
 }

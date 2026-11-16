@@ -1,83 +1,37 @@
-import { Injectable, computed, inject } from '@angular/core';
-import { AuditService } from '../../audit/application/audit.service';
-import { EstadoCuentaService } from '../../billing/application/estado-cuenta.service';
-import { CatalogoService } from '../../catalog/application/catalogo.service';
-import { CreditosService } from '../../credits/application/creditos.service';
-import { ClientesService } from '../../customers/application/clientes.service';
-import { nombreCompleto } from '../../customers/domain/model/cliente';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { AuthService } from '../../iam/application/auth.service';
-import { UsuariosService } from '../../iam/application/usuarios.service';
-import { compareIso, todayIso } from '../../shared/domain/finance/dates';
-import { round2 } from '../../shared/domain/finance/financial-math';
-import { TiendasService } from '../../stores/application/tiendas.service';
+import { DashboardApi, RegistroBitacora, ResumenNegocio, ResumenSistema } from '../infrastructure/dashboard.api';
 
-export interface Vencimiento {
-  key: string;
-  fecha: string;
-  cliente: string;
-  concepto: string;
-  monto: number;
-  vencido: boolean;
-}
+export type { RegistroBitacora, ResumenNegocio, ResumenSistema, Vencimiento } from '../infrastructure/dashboard.api';
 
-/** Modelo de lectura (query side) que combina información de varios bounded contexts. */
+const SISTEMA_VACIO: ResumenSistema = { tiendas: 0, tiendasActivas: 0, usuarios: 0, clientes: 0, compras: 0, bitacoraReciente: [] };
+const NEGOCIO_VACIO: ResumenNegocio = { tienda: '', clientes: 0, productos: 0, deuda: 0, disponible: 0, proximosVencimientos: [], bitacoraReciente: [] };
+
+/** Modelo de lectura (query side) del inicio, calculado por el backend. */
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
+  private readonly api = inject(DashboardApi);
   private readonly auth = inject(AuthService);
-  private readonly tiendas = inject(TiendasService);
-  private readonly usuarios = inject(UsuariosService);
-  private readonly clientes = inject(ClientesService);
-  private readonly catalogo = inject(CatalogoService);
-  private readonly creditos = inject(CreditosService);
-  private readonly estadoCuenta = inject(EstadoCuentaService);
-  private readonly audit = inject(AuditService);
 
-  readonly resumenSistema = computed(() => ({
-    tiendas: this.tiendas.tiendas().length,
-    tiendasActivas: this.tiendas.tiendas().filter((t) => t.estado === 'ACTIVA').length,
-    usuarios: this.usuarios.usuarios().length,
-    clientes: this.clientes.todos().length,
-    compras: this.creditos.todasLasCompras().length,
-  }));
+  private readonly sistema = signal<ResumenSistema>(SISTEMA_VACIO);
+  private readonly negocio = signal<ResumenNegocio>(NEGOCIO_VACIO);
+  readonly error = signal<string | null>(null);
 
-  readonly resumenNegocio = computed(() => {
-    const todos = this.clientes.deMiTienda();
-    const activos = todos.filter((c) => c.estado === 'ACTIVO');
-    return {
-      tienda: this.tiendas.nombreDe(this.auth.tiendaId()),
-      clientes: activos.length,
-      productos: this.catalogo.activosDeMiTienda().length,
-      deuda: round2(todos.reduce((s, c) => s + this.creditos.deudaVigente(c.id), 0)),
-      disponible: round2(activos.reduce((s, c) => s + this.creditos.disponible(c.id), 0)),
-    };
-  });
+  readonly resumenSistema = this.sistema.asReadonly();
+  readonly resumenNegocio = this.negocio.asReadonly();
+  readonly proximosVencimientos = computed(() => this.negocio().proximosVencimientos);
+  readonly bitacoraReciente = computed<RegistroBitacora[]>(() =>
+    this.auth.rol() === 'ADMIN_SISTEMA' ? this.sistema().bitacoraReciente : this.negocio().bitacoraReciente,
+  );
 
-  readonly proximosVencimientos = computed<Vencimiento[]>(() => {
-    const hoy = todayIso();
-    const items: Vencimiento[] = [];
-    for (const c of this.clientes.deMiTienda()) {
-      const nombre = nombreCompleto(c);
-      for (const fp of this.estadoCuenta.ciclosPendientes(c.id)) {
-        const e = this.estadoCuenta.estadoCiclo(c.id, fp, fp);
-        if (e) items.push({ key: `c${c.id}-${fp}`, fecha: fp, cliente: nombre, concepto: `Listado fin de mes (${e.liquidacion.lineas.length} compras)`, monto: e.liquidacion.totalExigible, vencido: fp < hoy });
-      }
-      for (const q of this.creditos.cuotasPendientes(c.id).filter((x) => x.pagable)) {
-        items.push({ key: `q${q.cuota.id}`, fecha: q.cuota.fechaVencimiento, cliente: nombre, concepto: `Cuota ${q.cuota.numeroCuota}/${q.compra.numeroCuotas} · ${q.descripcion}`, monto: q.cuota.montoCuota, vencido: q.cuota.fechaVencimiento < hoy });
-      }
+  /** Vuelve a consultar el resumen del rol en sesión. */
+  async load(): Promise<void> {
+    this.error.set(null);
+    try {
+      if (this.auth.rol() === 'ADMIN_SISTEMA') this.sistema.set(await this.api.sistema());
+      else if (this.auth.rol() === 'ADMIN_NEGOCIO') this.negocio.set(await this.api.negocio());
+    } catch (e) {
+      this.error.set((e as Error).message);
     }
-    return items.sort((a, b) => compareIso(a.fecha, b.fecha)).slice(0, 10);
-  });
-
-  /** Últimos registros de auditoría: todos para el admin del sistema, solo los de su tienda para el negocio. */
-  readonly bitacoraReciente = computed(() => {
-    const usuarios = this.usuarios.usuarios();
-    const nombres = new Map(usuarios.map((u) => [u.id, u.username]));
-    const esSistema = this.auth.rol() === 'ADMIN_SISTEMA';
-    const propios = new Set(usuarios.filter((u) => u.idTienda === this.auth.tiendaId()).map((u) => u.id));
-    return [...this.audit.registros()]
-      .filter((b) => esSistema || (b.idUsuario != null && propios.has(b.idUsuario)))
-      .reverse()
-      .slice(0, 8)
-      .map((b) => ({ ...b, usuario: b.idUsuario ? (nombres.get(b.idUsuario) ?? '—') : 'sistema' }));
-  });
+  }
 }

@@ -74,9 +74,9 @@ export class Usuarios {
       .filter((r) => !q || r.u.username.toLowerCase().includes(q) || r.tienda.toLowerCase().includes(q));
   });
 
-  toggle(u: Usuario) {
+  async toggle(u: Usuario) {
     try {
-      this.usuarios.cambiarEstado(u.id, u.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO');
+      await this.usuarios.cambiarEstado(u.id, u.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO');
     } catch (e) {
       this.msg.set({ ok: false, text: (e as Error).message });
     }

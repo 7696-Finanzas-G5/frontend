@@ -12,6 +12,7 @@ import { DashboardService } from '../../../application/dashboard.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="stack">
+      @if (dashboard.error(); as err) { <div class="alert alert-danger"><app-icon name="alert" /> {{ err }}</div> }
       @if (esSistema()) {
         @let s = dashboard.resumenSistema();
         <app-page-header icon="home" title="Panel del Administrador del Sistema" subtitle="Gestión global de comercios en la plataforma" />
@@ -77,4 +78,8 @@ export class Inicio {
   protected readonly dashboard = inject(DashboardService);
   private readonly auth = inject(AuthService);
   protected readonly esSistema = computed(() => this.auth.rol() === 'ADMIN_SISTEMA');
+
+  constructor() {
+    this.dashboard.load();
+  }
 }

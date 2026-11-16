@@ -254,7 +254,7 @@ export class Clientes {
       .map((cliente) => ({
         cliente,
         cond: this.clientes.condicionVigente(cliente.id),
-        disponible: this.creditos.disponible(cliente.id),
+        disponible: cliente.disponible,
       }));
   });
 
@@ -266,7 +266,7 @@ export class Clientes {
   protected readonly usuarioDuplicado = computed(() => {
     this.usuarios.usuarios();
     const id = this.editingId();
-    const own = id ? this.usuarios.usuarioDeCliente(id)?.id : null;
+    const own = id ? this.clientes.findById(id)?.idUsuario : null;
     return !!this.v().username.trim() && this.usuarios.isUsernameTaken(this.v().username, own);
   });
 
@@ -284,7 +284,7 @@ export class Clientes {
     const cond = this.clientes.condicionVigente(c.id);
     const comp = cond?.tasas.find((t) => t.finalidad === 'COMPENSATORIA');
     const mora = cond?.tasas.find((t) => t.finalidad === 'MORATORIA');
-    const user = this.usuarios.usuarioDeCliente(c.id);
+    const user = this.clientes.findById(c.id);
     const pct = (x: number) => Math.round(x * 1e6) / 1e4;
     this.editingId.set(c.id);
     this.msg.set(null);
@@ -306,7 +306,7 @@ export class Clientes {
       diaPago: cond?.diaPago ?? 26,
       username: user?.username ?? '',
       clave: '',
-      tieneUsuario: !!user,
+      tieneUsuario: !!user?.username,
       activo: c.estado === 'ACTIVO',
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -352,9 +352,13 @@ export class Clientes {
     }
   }
 
-  toggle(c: Cliente) {
+  async toggle(c: Cliente) {
     const alta = c.estado !== 'ACTIVO';
     if (!confirm(`¿Desea dar de ${alta ? 'alta' : 'baja'} a ${nombreCompleto(c)}?`)) return;
-    this.clientes.cambiarEstado(c.id, alta);
+    try {
+      await this.clientes.cambiarEstado(c.id, alta);
+    } catch (e) {
+      this.msg.set({ ok: false, text: (e as Error).message });
+    }
   }
 }

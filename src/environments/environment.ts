@@ -1,5 +1,8 @@
-/** Configuración de producción. Ajuste `apiUrl` a la URL pública del backend CrediBarrio. */
+/**
+ * Configuración de producción (build de Vercel): backend desplegado en Render con `render.yaml`.
+ * Si Render asigna otra URL al servicio `credibarrio-backend`, actualícela aquí.
+ */
 export const environment = {
   production: true,
-  apiUrl: 'http://localhost:8080/api/v1',
+  apiUrl: 'https://credibarrio-backend.onrender.com/api/v1',
 };

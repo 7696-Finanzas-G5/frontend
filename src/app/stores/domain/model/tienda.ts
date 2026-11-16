@@ -24,6 +24,9 @@ export interface Tienda {
   readonly giroNegocio: string;
   readonly estado: EstadoTienda;
   readonly fechaRegistro: string;
+  /** Usuario Administrador del Negocio asociado (lo informa el backend). */
+  readonly idAdmin?: number | null;
+  readonly adminUsername?: string | null;
 }
 
 export interface DatosTienda {

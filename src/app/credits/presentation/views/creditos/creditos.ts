@@ -116,7 +116,7 @@ import { descripcionCompra } from '../../../domain/model/compra';
       }
 
       <div class="actions">
-        <button class="btn btn-primary btn-lg" (click)="confirmar()" [disabled]="!sim() || sim()!.errores.length > 0">
+        <button class="btn btn-primary btn-lg" (click)="confirmar()" [disabled]="!sim() || sim()!.errores.length > 0 || saving()">
           <app-icon name="plus" /> Confirmar y Registrar Crédito
         </button>
       </div>
@@ -238,17 +238,22 @@ export class Creditos {
     return !p || permiteModalidad(p, m);
   }
 
-  confirmar() {
+  protected readonly saving = signal(false);
+
+  async confirmar() {
     const s = this.sim();
-    if (!s || s.errores.length) return;
+    if (!s || s.errores.length || this.saving()) return;
     const v = this.v();
+    this.saving.set(true);
     try {
-      const compra = this.creditos.registrarCompra({ ...v, n: v.modalidad === 'CUOTAS' ? v.n : null });
+      const compra = await this.creditos.registrarCompra({ ...v, n: v.modalidad === 'CUOTAS' ? v.n : null });
       const cliente = this.clientes().find((c) => c.id === v.idCliente)?.nombre;
       this.form.reset({ idCliente: v.idCliente, idProducto: 0, cantidad: 1, fechaHoraCompra: nowIsoMinutes(), modalidad: 'FIN_MES', n: 1 });
       this.ok.set(`Crédito #${compra.id} registrado para ${cliente}: ${compra.modalidad === 'FIN_MES' ? 'pago único el ' + formatDate(compra.fechaPago) : compra.numeroCuotas + ' cuotas mensuales'}.`);
     } catch (e) {
       this.error.set((e as Error).message);
+    } finally {
+      this.saving.set(false);
     }
   }
 }

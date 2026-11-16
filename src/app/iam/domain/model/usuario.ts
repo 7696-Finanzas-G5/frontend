@@ -16,7 +16,6 @@ export interface Usuario {
   readonly idTienda: number | null;
   readonly idCliente: number | null;
   readonly username: string;
-  readonly claveHash: string;
   readonly rol: Rol;
   readonly estado: EstadoActivo;
   readonly ultimoAcceso: string | null;

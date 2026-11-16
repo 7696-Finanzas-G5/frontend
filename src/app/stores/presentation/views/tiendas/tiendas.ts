@@ -126,7 +126,7 @@ export class Tiendas {
     return this.tiendas
       .tiendas()
       .filter((t) => !q || [t.nombreComercial, t.ruc, t.direccion, t.giroNegocio].some((v) => v.toLowerCase().includes(q)))
-      .map((t) => ({ t, admin: this.usuarios.adminDeTienda(t.id)?.username ?? '—' }));
+      .map((t) => ({ t, admin: t.adminUsername ?? this.usuarios.adminDeTienda(t.id)?.username ?? '—' }));
   });
   protected readonly rucDuplicado = computed(() => !!this.value().ruc && this.tiendas.isRucTaken(this.value().ruc, this.editingId()));
   protected readonly usuarioDuplicado = computed(() => {
@@ -149,7 +149,7 @@ export class Tiendas {
       ruc: t.ruc,
       giroNegocio: t.giroNegocio,
       direccion: t.direccion,
-      adminUsername: this.usuarios.adminDeTienda(t.id)?.username ?? '',
+      adminUsername: t.adminUsername ?? this.usuarios.adminDeTienda(t.id)?.username ?? '',
       adminClave: '',
       activa: t.estado === 'ACTIVA',
     });
@@ -182,9 +182,13 @@ export class Tiendas {
     }
   }
 
-  toggle(t: Tienda) {
+  async toggle(t: Tienda) {
     const alta = t.estado !== 'ACTIVA';
     if (!confirm(`¿Desea dar de ${alta ? 'alta' : 'baja'} a "${t.nombreComercial}"?`)) return;
-    this.tiendas.cambiarEstado(t.id, alta);
+    try {
+      await this.tiendas.cambiarEstado(t.id, alta);
+    } catch (e) {
+      this.msg.set({ ok: false, text: (e as Error).message });
+    }
   }
 }

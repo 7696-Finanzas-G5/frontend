@@ -1,11 +1,8 @@
-import { Injectable, inject } from '@angular/core';
-import { AuditService } from '../../audit/application/audit.service';
+import { Injectable, effect, inject, signal, untracked } from '@angular/core';
 import { AuthService } from '../../iam/application/auth.service';
 import { UsuariosService } from '../../iam/application/usuarios.service';
-import { DomainError } from '../../shared/domain/domain-error';
-import { nowIsoMinutes } from '../../shared/domain/finance/dates';
-import { DatosTienda, EstadoTienda, Tienda, validarDatosTienda } from '../domain/model/tienda';
-import { TiendaRepository } from '../domain/repositories/tienda.repository';
+import { DatosTienda, Tienda, validarDatosTienda } from '../domain/model/tienda';
+import { TiendasApi } from '../infrastructure/tiendas.api';
 
 export interface GuardarTiendaCommand {
   datos: DatosTienda;
@@ -18,62 +15,58 @@ export interface GuardarTiendaCommand {
 /** Casos de uso del Administrador del Sistema: alta y baja de tiendas multi-giro. */
 @Injectable({ providedIn: 'root' })
 export class TiendasService {
-  private readonly repo = inject(TiendaRepository);
-  private readonly usuarios = inject(UsuariosService);
-  private readonly audit = inject(AuditService);
+  private readonly api = inject(TiendasApi);
   private readonly auth = inject(AuthService);
+  private readonly usuarios = inject(UsuariosService);
+  private readonly _tiendas = signal<Tienda[]>([]);
 
-  readonly tiendas = this.repo.all;
+  /** Todas las tiendas (admin del sistema) o la tienda del usuario en sesión. */
+  readonly tiendas = this._tiendas.asReadonly();
+
+  constructor() {
+    effect(() => {
+      const user = this.auth.user();
+      untracked(() => (user ? this.load().catch(() => undefined) : this._tiendas.set([])));
+    });
+  }
+
+  async load(): Promise<void> {
+    const user = this.auth.user();
+    if (user?.rol === 'ADMIN_SISTEMA') this._tiendas.set(await this.api.listar());
+    else if (user?.idTienda != null) this._tiendas.set([await this.api.obtener(user.idTienda)]);
+    else this._tiendas.set([]);
+  }
 
   findById(id: number | null | undefined): Tienda | undefined {
-    return this.repo.findById(id);
+    return id == null ? undefined : this._tiendas().find((t) => t.id === id);
   }
 
   nombreDe(id: number | null | undefined): string {
-    return this.repo.findById(id)?.nombreComercial ?? '—';
+    return this.findById(id)?.nombreComercial ?? '—';
   }
 
   isRucTaken(ruc: string, exceptId?: number | null): boolean {
-    const t = this.repo.findByRuc(ruc);
-    return !!t && t.id !== exceptId;
+    return this._tiendas().some((t) => t.ruc === ruc && t.id !== exceptId);
   }
 
   async registrar(cmd: GuardarTiendaCommand): Promise<Tienda> {
-    const datos = validarDatosTienda(cmd.datos);
-    if (this.isRucTaken(datos.ruc)) throw new DomainError('Ya existe una tienda con este RUC.');
-    if (this.usuarios.isUsernameTaken(cmd.adminUsername)) throw new DomainError('El usuario administrador ya está en uso.');
-    const estado: EstadoTienda = cmd.activa ? 'ACTIVA' : 'INACTIVA';
-    const tienda = this.repo.add({ ...datos, estado, fechaRegistro: nowIsoMinutes() });
-    await this.usuarios.registrar({
-      username: cmd.adminUsername,
-      clave: cmd.adminClave,
-      rol: 'ADMIN_NEGOCIO',
-      idTienda: tienda.id,
-      idCliente: null,
-      estado: cmd.activa ? 'ACTIVO' : 'INACTIVO',
-    });
-    this.audit.registrar(this.auth.userIdValue(), 'ALTA', 'tienda', tienda.id, datos.nombreComercial);
-    return tienda;
+    const t = await this.api.registrar(this.request(cmd));
+    await Promise.all([this.load(), this.usuarios.load()]);
+    return t;
   }
 
   async actualizar(id: number, cmd: GuardarTiendaCommand): Promise<Tienda> {
-    const datos = validarDatosTienda(cmd.datos);
-    if (this.isRucTaken(datos.ruc, id)) throw new DomainError('Ya existe una tienda con este RUC.');
-    const estado = cmd.activa ? 'ACTIVO' : 'INACTIVO';
-    const admin = this.usuarios.adminDeTienda(id);
-    if (admin) {
-      await this.usuarios.actualizarCredenciales(admin.id, { username: cmd.adminUsername, clave: cmd.adminClave || undefined, estado });
-    } else if (cmd.adminClave) {
-      await this.usuarios.registrar({ username: cmd.adminUsername, clave: cmd.adminClave, rol: 'ADMIN_NEGOCIO', idTienda: id, idCliente: null, estado });
-    }
-    const tienda = this.repo.update(id, { ...datos, estado: cmd.activa ? 'ACTIVA' : 'INACTIVA' });
-    this.audit.registrar(this.auth.userIdValue(), 'EDITAR', 'tienda', id, datos.nombreComercial);
-    return tienda;
+    const t = await this.api.actualizar(id, this.request(cmd));
+    await Promise.all([this.load(), this.usuarios.load()]);
+    return t;
   }
 
-  cambiarEstado(id: number, activa: boolean): void {
-    const t = this.repo.update(id, { estado: activa ? 'ACTIVA' : 'INACTIVA' });
-    this.usuarios.sincronizarEstadoAdminTienda(id, activa ? 'ACTIVO' : 'INACTIVO');
-    this.audit.registrar(this.auth.userIdValue(), activa ? 'ALTA' : 'BAJA', 'tienda', id, t.nombreComercial);
+  async cambiarEstado(id: number, activa: boolean): Promise<void> {
+    await this.api.cambiarEstado(id, activa);
+    await Promise.all([this.load(), this.usuarios.load()]);
+  }
+
+  private request(cmd: GuardarTiendaCommand) {
+    return { ...validarDatosTienda(cmd.datos), activa: cmd.activa, adminUsername: cmd.adminUsername.trim(), adminClave: cmd.adminClave };
   }
 }

@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { DemoDataService } from '../../../../shared/application/demo-data.service';
 import { HelpTip } from '../../../../shared/presentation/components/help-tip';
 import { Icon } from '../../../../shared/presentation/components/icon';
 import { PageHeader } from '../../../../shared/presentation/components/page-header';
@@ -29,20 +28,11 @@ import { CLAVE_MAX, CLAVE_MIN } from '../../../domain/model/usuario';
         @if (msg(); as m) { <div class="alert" [class.alert-ok]="m.ok" [class.alert-danger]="!m.ok" style="margin-top:14px">{{ m.text }}</div> }
         <div class="actions" style="margin-top:16px"><button class="btn btn-primary" [disabled]="form.invalid">Actualizar contraseña</button></div>
       </form>
-
-      @if (auth.rol() === 'ADMIN_SISTEMA') {
-        <section class="card">
-          <div class="card-title"><h2><app-icon name="refresh" /> Datos de demostración</h2></div>
-          <p class="muted">Los datos se guardan en el navegador (localStorage). Puede restaurar los datos iniciales de prueba del informe (juegos de datos 1 y 2).</p>
-          <div class="actions"><button class="btn btn-danger" (click)="reset()">Restablecer datos de demostración</button></div>
-        </section>
-      }
     </div>
   `,
 })
 export class AccountSettings {
   protected readonly auth = inject(AuthService);
-  private readonly demo = inject(DemoDataService);
   private readonly router = inject(Router);
   protected readonly msg = signal<{ ok: boolean; text: string } | null>(null);
 
@@ -64,10 +54,4 @@ export class AccountSettings {
     }
   }
 
-  async reset() {
-    if (!confirm('Se eliminarán todos los cambios y se cargarán los datos de demostración. ¿Continuar?')) return;
-    await this.demo.reset();
-    this.auth.logout();
-    this.router.navigateByUrl('/login');
-  }
 }

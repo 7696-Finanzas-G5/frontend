@@ -1,6 +1,3 @@
-import { NewEntity } from '../../../shared/domain/repository';
-import { CronogramaFrances } from '../../../shared/domain/finance/financial-math';
-
 export type EstadoCuota = 'PENDIENTE' | 'PAGADA' | 'VENCIDA' | 'ANULADA';
 
 /** Cuota del cronograma francés (pertenece al agregado Compra). */
@@ -18,17 +15,3 @@ export interface Cuota {
 }
 
 export const estaPendiente = (q: Pick<Cuota, 'estado'>) => q.estado === 'PENDIENTE' || q.estado === 'VENCIDA';
-
-export function cuotasDesdeCronograma(idCompra: number, c: CronogramaFrances): NewEntity<Cuota>[] {
-  return c.filas.map((f) => ({
-    idCompra,
-    numeroCuota: f.k,
-    fechaVencimiento: f.fecha,
-    saldoInicial: f.saldoInicial,
-    interesPeriodo: f.interes,
-    amortizacion: f.amortizacion,
-    montoCuota: f.cuota,
-    saldoFinal: f.saldoFinal,
-    estado: 'PENDIENTE',
-  }));
-}

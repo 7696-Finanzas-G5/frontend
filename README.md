@@ -1,7 +1,5 @@
 # CrediBarrio – Frontend (Angular 21)
 
-Control de cuenta corriente de crédito para pequeños negocios (Finanzas e Ingeniería Económica · UPC 2026-02, Grupo 05).
-
 ## Ejecutar
 
 El frontend consume la API REST del backend Spring Boot
@@ -17,7 +15,7 @@ Luego el frontend:
 ```bash
 npm install
 npm start          # http://localhost:4200
-npm test           # pruebas del modelo financiero (juegos de datos del punto 6.4)
+npm test            
 ```
 
 > Requiere Node ≥ 22.12 (Angular 21).

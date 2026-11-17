@@ -14,9 +14,8 @@ import { ROLES, Rol } from '../../../domain/model/usuario';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
-      <div class="login-layout">
-        <form class="card login" [formGroup]="form" (ngSubmit)="submit()">
-          <div class="form-heading"><app-logo /><h2>Inicia sesión</h2><p>Accede a tu cuenta de CrediBarrio</p></div>
+      <form class="card login" [formGroup]="form" (ngSubmit)="submit()">
+        <app-logo [big]="true" />
 
         <div class="field">
           <label for="rol">Rol <app-help title="Ayuda de Rol" text="Seleccione Administrador del Sistema (tiendas), Administrador del Negocio (créditos) o Cliente (consultas)." /></label>
@@ -64,22 +63,15 @@ import { ROLES, Rol } from '../../../domain/model/usuario';
             }
           </ul>
         </details>
-        </form>
-      </div>
+      </form>
     </div>
   `,
   styles: `
     .page {
-      min-height: 100vh; display: grid; place-items: center; padding: 32px 20px; position: relative; isolation: isolate;
-      background: url('/credibarrio-login-bg.png') center / cover no-repeat;
+      min-height: 100vh; display: grid; place-items: center; padding: 24px 16px;
+      background: radial-gradient(circle at 15% 20%, #e3edff 0, transparent 45%), radial-gradient(circle at 85% 80%, #e8f0ff 0, transparent 40%), var(--bg);
     }
-    .page::before { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(8,28,45,.48), rgba(16,42,67,.16) 62%, rgba(16,42,67,.08)); }
-    .login-layout { width: min(430px, 100%); }
-    .login { width: 100%; display: flex; flex-direction: column; gap: 20px; padding: 34px 36px 28px; border: 1px solid rgba(255,255,255,.72); border-top: 3px solid var(--accent); border-radius: 0; background: rgba(255,255,255,.97); box-shadow: 0 18px 54px rgba(5,20,34,.27); clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px)); }
-    .form-heading { margin-bottom: 4px; }
-    .form-heading app-logo { display: flex; margin-bottom: 34px; }
-    .form-heading h2 { margin-top: 0; font-size: 25px; letter-spacing: -.035em; }
-    .form-heading p { margin: 7px 0 0; color: var(--muted); font-size: 13px; }
+    .login { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 18px; padding: 32px 30px; }
     .pass .input { padding-right: 42px; }
     .eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); border: 0; background: none; color: var(--muted); cursor: pointer; padding: 6px; }
     .secure { display: flex; gap: 6px; justify-content: center; align-items: center; color: var(--muted); font-size: 12px; border-top: 1px solid var(--border); padding-top: 14px; }
@@ -87,7 +79,6 @@ import { ROLES, Rol } from '../../../domain/model/usuario';
     .demo summary { cursor: pointer; }
     .demo ul { padding-left: 16px; margin: 8px 0 0; display: flex; flex-direction: column; gap: 4px; }
     .link { border: 0; background: none; padding: 0; color: var(--primary); cursor: pointer; font: inherit; text-align: left; }
-    @media (max-width: 480px) { .page { padding: 18px; } .login { padding: 28px 24px 24px; gap: 17px; } .form-heading app-logo { margin-bottom: 26px; } }
   `,
 })
 export class Login {

@@ -8,7 +8,7 @@ import { Icon } from './icon';
   template: `
     <div class="ph card">
       <div class="ph-main">
-        <span class="ph-icon" [attr.data-icon]="icon()"><app-icon [name]="icon()" [size]="30" /></span>
+        <span class="ph-icon"><app-icon [name]="icon()" [size]="26" /></span>
         <div>
           <h1>{{ title() }}</h1>
           @if (subtitle()) { <p>{{ subtitle() }}</p> }
@@ -22,19 +22,7 @@ import { Icon } from './icon';
   styles: `
     .ph { display: flex; justify-content: space-between; gap: 20px; align-items: center; flex-wrap: wrap; }
     .ph-main { display: flex; gap: 16px; align-items: center; }
-    .ph-icon {
-      display: grid;
-      place-items: center;
-      flex: 0 0 46px;
-      min-height: 42px;
-      color: var(--section-color, var(--primary));
-      border-inline-end: 2px solid currentColor;
-      padding-inline-end: 12px;
-    }
-    .ph-icon[data-icon="card"] { --section-color: #b5246d; }
-    .ph-icon[data-icon="users"] { --section-color: #7139b7; }
-    .ph-icon:is([data-icon="tag"], [data-icon="store"]) { --section-color: #168044; }
-    .ph-icon[data-icon="chart"] { --section-color: var(--metric); }
+    .ph-icon { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: var(--primary-soft); color: var(--primary); }
     h1 { margin: 0; font-size: 22px; }
     p { margin: 2px 0 0; color: var(--muted); }
     .ph-help {

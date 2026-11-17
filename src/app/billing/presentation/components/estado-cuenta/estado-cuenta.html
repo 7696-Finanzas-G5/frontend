@@ -17,7 +17,7 @@
   @if (error()) { <div class="alert alert-danger"><app-icon name="alert" /> {{ error() }}</div> }
 
   <!-- Resumen de cuenta al corte -->
-  <section class="card">
+  <section class="card" tabindex="-1" data-report-section="resumen">
     <div class="card-title">
       <h2><app-icon name="user" /> Resumen de Cuenta al Corte</h2>
       @if (ciclos().length > 1) {
@@ -51,9 +51,30 @@
     }
   </section>
 
+  @if (allowPayments() && estado(); as e) {
+    <section class="card report-chart">
+      <h2>Composición del total a pagar</h2>
+      @if (e.mora.totalExigible > 0) {
+        <div class="report-columns">
+        @for (item of [
+          { label: 'Capital', icon: 'wallet', amount: e.liquidacion.capitalTotal },
+          { label: 'Interés compensatorio', icon: 'percent', amount: e.liquidacion.interesTotal },
+          { label: 'Mora', icon: 'clock', amount: e.mora.interesMoratorio }
+        ]; track item.label) {
+          <div class="report-bar">
+            <span class="report-label"><app-icon [name]="item.icon" /> {{ item.label }}</span><strong>{{ item.amount | money: moneda() }}</strong><div class="report-track" aria-hidden="true"><span [style.width.%]="100 * item.amount / e.mora.totalExigible"></span></div>
+          </div>
+        }
+        </div>
+      } @else {
+        <p class="muted">Sin saldo exigible en este ciclo.</p>
+      }
+    </section>
+  }
+
   @if (estado(); as e) {
     <!-- Detalle -->
-    <section class="card">
+    <section class="card" data-report-section="compras">
       <div class="card-title"><h2><app-icon name="receipt" /> Detalle de Compras Ordenadas por Fecha e Intereses Acumulados</h2></div>
       <div class="table-wrap">
         <table class="table">
@@ -87,7 +108,7 @@
     </section>
 
     <!-- Liquidación -->
-    <section class="card">
+    <section class="card" data-report-section="liquidacion">
       <div class="card-title"><h2><app-icon name="wallet" /> Liquidación de Pago</h2></div>
       <div class="liq">
         <div class="total">
@@ -112,7 +133,7 @@
   }
 
   <!-- Cuotas -->
-  <section class="card">
+  <section class="card" tabindex="-1" data-report-section="cuotas">
     <div class="card-title"><h2><app-icon name="calendar" /> Cuotas Pendientes (Método Francés)</h2></div>
     <div class="table-wrap">
       <table class="table">
@@ -140,7 +161,7 @@
   </section>
 
   <!-- Historial -->
-  <section class="card">
+  <section class="card" tabindex="-1" data-report-section="historial">
     <div class="card-title"><h2><app-icon name="clock" /> Historial de Pagos</h2></div>
     <div class="table-wrap">
       <table class="table">

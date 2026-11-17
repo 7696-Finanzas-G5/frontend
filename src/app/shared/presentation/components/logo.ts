@@ -1,29 +1,27 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { Icon } from './icon';
 
 @Component({
   selector: 'app-logo',
-  imports: [Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="logo" [class.big]="big()">
-      <span class="mark"><app-icon name="store" [size]="big() ? 40 : 24" /></span>
-      <div>
-        <div class="name"><span>Credi</span>Barrio</div>
+      <span class="mark" aria-hidden="true"><span>C</span><i></i></span>
+      <div class="wordmark">
+        <div class="name">CrediBarrio</div>
         <div class="tag">Control de Cuenta Corriente para Negocios</div>
       </div>
     </div>
   `,
   styles: `
-    .logo { display: flex; align-items: center; gap: 12px; }
-    .logo.big { flex-direction: column; text-align: center; gap: 10px; }
-    .mark { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--primary-soft); color: var(--primary); }
-    .big .mark { width: 76px; height: 76px; }
-    .name { font-weight: 800; font-size: 20px; color: #0d2a63; letter-spacing: -0.02em; line-height: 1.1; }
-    .name span { color: var(--primary); }
-    .big .name { font-size: 32px; }
-    .tag { font-size: 11.5px; color: var(--muted); }
-    .big .tag { font-size: 14px; }
+    .logo { display: flex; align-items: center; gap: 11px; }
+    .logo.big { gap: 10px; }
+    .mark { position: relative; display: grid; place-items: center; width: 34px; height: 34px; color: var(--accent); border-left: 3px solid currentColor; font-family: Georgia,serif; font-size: 32px; font-weight: 700; line-height: 1; }
+    .mark i { position: absolute; width: 13px; height: 3px; right: 0; bottom: 6px; background: currentColor; transform: rotate(-45deg); transform-origin: right center; }
+    .big .mark { width: 42px; height: 42px; font-size: 39px; }
+    .name { font-weight: 760; font-size: 18px; color: var(--primary); letter-spacing: -.055em; line-height: 1; }
+    .big .name { font-size: 20px; }
+    .tag { margin-top: 4px; font-size: 10px; color: var(--muted); letter-spacing: .005em; }
+    .big .tag { font-size: 11px; }
   `,
 })
 export class Logo {

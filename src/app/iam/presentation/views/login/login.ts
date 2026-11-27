@@ -70,9 +70,12 @@ import { ROLES, Rol } from '../../../domain/model/usuario';
   styles: `
     .page {
       min-height: 100vh; display: grid; place-items: center; padding: 24px 16px;
-      background: radial-gradient(circle at 15% 20%, #e3edff 0, transparent 45%), radial-gradient(circle at 85% 80%, #e8f0ff 0, transparent 40%), var(--bg);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05)),
+        url('/login-bg.svg') center bottom / cover no-repeat,
+        var(--bg);
     }
-    .login { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 18px; padding: 32px 30px; }
+    .login { width: 100%; max-width: 440px; box-shadow: 0 20px 50px rgba(23, 105, 255, 0.18); display: flex; flex-direction: column; gap: 18px; padding: 32px 30px; }
     .pass .input { padding-right: 42px; }
     .eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); border: 0; background: none; color: var(--muted); cursor: pointer; padding: 6px; }
     .secure { display: flex; gap: 6px; justify-content: center; align-items: center; color: var(--muted); font-size: 12px; border-top: 1px solid var(--border); padding-top: 14px; }

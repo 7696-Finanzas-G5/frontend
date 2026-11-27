@@ -8,6 +8,13 @@ export const loginRoute: Route = {
   title: 'Ingresar · CrediBarrio',
 };
 
+export const registroRoute: Route = {
+  path: 'registro',
+  canActivate: [guestGuard],
+  loadComponent: () => import('./views/registro/registro').then((m) => m.Registro),
+  title: 'Registrar negocio · CrediBarrio',
+};
+
 export const iamRoutes: Routes = [
   { path: 'usuarios', canActivate: [roleGuard('ADMIN_SISTEMA')], loadComponent: () => import('./views/usuarios/usuarios').then((m) => m.Usuarios), title: 'Usuarios · CrediBarrio' },
   { path: 'configuracion', loadComponent: () => import('./views/account-settings/account-settings').then((m) => m.AccountSettings), title: 'Configuración · CrediBarrio' },

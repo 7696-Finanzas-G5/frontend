@@ -5,11 +5,12 @@ import { creditsRoutes } from './credits/presentation/credits.routes';
 import { customersRoutes } from './customers/presentation/customers.routes';
 import { dashboardRoutes } from './dashboard/presentation/dashboard.routes';
 import { authGuard } from './iam/presentation/guards';
-import { iamRoutes, loginRoute } from './iam/presentation/iam.routes';
+import { iamRoutes, loginRoute, registroRoute } from './iam/presentation/iam.routes';
 import { storesRoutes } from './stores/presentation/stores.routes';
 
 export const routes: Routes = [
   loginRoute,
+  registroRoute,
   {
     path: '',
     canActivate: [authGuard],

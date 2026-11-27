@@ -1,7 +1,7 @@
 import { Injectable, effect, inject, signal, untracked } from '@angular/core';
 import { AuthService } from '../../iam/application/auth.service';
 import { UsuariosService } from '../../iam/application/usuarios.service';
-import { DatosTienda, Tienda, validarDatosTienda } from '../domain/model/tienda';
+import { DatosTienda, GIROS_NEGOCIO, Tienda, validarDatosTienda } from '../domain/model/tienda';
 import { TiendasApi } from '../infrastructure/tiendas.api';
 
 export interface GuardarTiendaCommand {
@@ -35,6 +35,16 @@ export class TiendasService {
     if (user?.rol === 'ADMIN_SISTEMA') this._tiendas.set(await this.api.listar());
     else if (user?.idTienda != null) this._tiendas.set([await this.api.obtener(user.idTienda)]);
     else this._tiendas.set([]);
+  }
+
+  /** Giros admitidos por el backend (público); si no responde, se usa la lista local. */
+  async giros(): Promise<string[]> {
+    try {
+      const giros = await this.api.giros();
+      return giros.length ? giros : GIROS_NEGOCIO;
+    } catch {
+      return GIROS_NEGOCIO;
+    }
   }
 
   findById(id: number | null | undefined): Tienda | undefined {

@@ -1,8 +1,8 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { DomainError } from '../../shared/domain/domain-error';
 import { TokenStorage } from '../../shared/infrastructure/http/token-storage';
-import { Rol, Usuario, validarClave } from '../domain/model/usuario';
-import { IamApi } from '../infrastructure/iam.api';
+import { Rol, Usuario, validarClave, validarUsername } from '../domain/model/usuario';
+import { IamApi, RegistroRequest } from '../infrastructure/iam.api';
 
 /** Caso de uso: autenticación (JWT emitido por el backend) y sesión del usuario actual. */
 @Injectable({ providedIn: 'root' })
@@ -37,6 +37,16 @@ export class AuthService {
 
   async login(rol: Rol, username: string, clave: string): Promise<Usuario> {
     const r = await this.api.login(rol, username.trim(), clave);
+    this.tokens.set(r.token);
+    this._user.set(r.usuario);
+    return r.usuario;
+  }
+
+  /** Auto-registro público de un negocio: el backend crea la tienda y su administrador y devuelve la sesión. */
+  async registrarNegocio(cmd: RegistroRequest): Promise<Usuario> {
+    const username = validarUsername(cmd.username);
+    validarClave(cmd.clave);
+    const r = await this.api.registro({ ...cmd, username });
     this.tokens.set(r.token);
     this._user.set(r.usuario);
     return r.usuario;

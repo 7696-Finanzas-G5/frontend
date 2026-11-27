@@ -21,6 +21,11 @@ export class TiendasApi {
     return this.api.get('/tiendas');
   }
 
+  /** Giros de negocio admitidos (público, sin token). */
+  giros(): Promise<string[]> {
+    return this.api.get('/tiendas/giros');
+  }
+
   obtener(id: number): Promise<Tienda> {
     return this.api.get(`/tiendas/${id}`);
   }

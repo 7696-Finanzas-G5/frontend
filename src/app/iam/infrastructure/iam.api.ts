@@ -9,6 +9,15 @@ export interface LoginResponse {
   usuario: Usuario;
 }
 
+export interface RegistroRequest {
+  nombreComercial: string;
+  ruc: string;
+  direccion: string;
+  giroNegocio: string;
+  username: string;
+  clave: string;
+}
+
 /** Adaptador HTTP de IAM: `/auth` y `/usuarios`. */
 @Injectable({ providedIn: 'root' })
 export class IamApi {
@@ -16,6 +25,11 @@ export class IamApi {
 
   login(rol: Rol, username: string, clave: string): Promise<LoginResponse> {
     return this.api.post('/auth/login', { rol, username, clave });
+  }
+
+  /** Registro público de un negocio: crea la tienda y su Administrador del Negocio; devuelve la sesión. */
+  registro(req: RegistroRequest): Promise<LoginResponse> {
+    return this.api.post('/auth/registro', req);
   }
 
   me(): Promise<Usuario> {

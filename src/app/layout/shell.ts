@@ -60,7 +60,13 @@ const NAV: NavItem[] = [
     </div>
   `,
   styles: `
-    :host { display: flex; flex-direction: column; min-height: 100vh; }
+    :host {
+      display: flex; flex-direction: column; min-height: 100vh;
+      background:
+        linear-gradient(180deg, rgba(243, 247, 253, 0.92) 0%, rgba(243, 247, 253, 0.7) 60%, rgba(243, 247, 253, 0.55) 100%),
+        url('/login-bg.svg') center bottom / cover no-repeat fixed,
+        var(--bg);
+    }
     .topbar {
       position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 14px;
       background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 24px;

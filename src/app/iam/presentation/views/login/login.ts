@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { DEMO_CREDENCIALES } from '../../../../bootstrap/demo-credentials';
 import { HelpTip } from '../../../../shared/presentation/components/help-tip';
 import { Icon } from '../../../../shared/presentation/components/icon';
@@ -10,7 +10,7 @@ import { ROLES, Rol } from '../../../domain/model/usuario';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, HelpTip, Icon, Logo],
+  imports: [ReactiveFormsModule, RouterLink, HelpTip, Icon, Logo],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
@@ -53,6 +53,7 @@ import { ROLES, Rol } from '../../../domain/model/usuario';
         <button class="btn btn-primary btn-lg" type="submit" [disabled]="loading()">
           Ingresar al Sistema <app-icon name="arrow" />
         </button>
+        <div class="register">¿Tiene un negocio y aún no tiene cuenta? <a routerLink="/registro">Registre su negocio</a></div>
         <div class="secure"><app-icon name="shield" [size]="16" /> Acceso seguro a CrediBarrio</div>
 
         <details class="demo">
@@ -75,6 +76,8 @@ import { ROLES, Rol } from '../../../domain/model/usuario';
     .pass .input { padding-right: 42px; }
     .eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); border: 0; background: none; color: var(--muted); cursor: pointer; padding: 6px; }
     .secure { display: flex; gap: 6px; justify-content: center; align-items: center; color: var(--muted); font-size: 12px; border-top: 1px solid var(--border); padding-top: 14px; }
+    .register { text-align: center; font-size: 13px; color: var(--muted); }
+    .register a { color: var(--primary); font-weight: 600; }
     .demo { font-size: 12px; color: var(--muted); }
     .demo summary { cursor: pointer; }
     .demo ul { padding-left: 16px; margin: 8px 0 0; display: flex; flex-direction: column; gap: 4px; }

@@ -24,6 +24,9 @@ La URL del backend se configura en `src/environments/environment.development.ts`
 `src/environments/environment.ts` (producción). La sesión usa el JWT que emite `POST /auth/login`, guardado en
 `sessionStorage`; los adaptadores HTTP de cada bounded context están en `src/app/*/infrastructure/*.api.ts`.
 
+Un negocio nuevo puede registrarse sin cuenta en `/registro` (enlace en el login): `POST /auth/registro` crea la tienda y
+su usuario Administrador del Negocio y deja la sesión iniciada. Los giros se cargan de `GET /tiendas/giros` (público).
+
 ### Credenciales de demostración
 
 | Rol | Usuario | Contraseña |

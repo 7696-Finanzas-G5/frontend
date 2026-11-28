@@ -116,6 +116,11 @@ function condicionesValidator(g: AbstractControl): ValidationErrors | null {
             </select>
           </div>
           <div class="field">
+            <label for="hc">Hora de Corte <app-help title="Hora de corte" text="Hora de Lima en que se cierra el ciclo. Las compras anteriores entran al listado del mes; desde esa hora pasan al mes siguiente. Puede indicar segundos. Por defecto 23:59:00." /></label>
+            <input id="hc" class="input" type="time" step="1" formControlName="horaCorte" />
+            @if (form.controls.horaCorte.invalid) { <span class="error">Indique la hora de corte.</span> }
+          </div>
+          <div class="field">
             <label for="dp">Fecha de Pago Mensual Pactada <app-help title="Fecha de pago" text="Día del mes (1 a 30) en que el cliente debe pagar. Debe ser posterior al día de corte." /></label>
             <select id="dp" class="input" formControlName="diaPago">
               @for (d of diasPago; track d) { <option [ngValue]="d">Día {{ d }} de cada mes</option> }
@@ -223,6 +228,7 @@ export class Clientes {
       tasaCompensatoria: [20, [Validators.required, Validators.min(0.0001), Validators.max(100)]],
       tasaMoratoria: [10, [Validators.required, Validators.min(0), Validators.max(100)]],
       diaCorte: [20, [Validators.required, Validators.min(1), Validators.max(28)]],
+      horaCorte: ['23:59:00', [Validators.required, Validators.pattern(/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{1,9})?)?$/)]],
       diaPago: [26, [Validators.required, Validators.min(1), Validators.max(30)]],
       username: ['', Validators.maxLength(80)],
       clave: ['', [Validators.minLength(8), Validators.maxLength(64)]],
@@ -303,6 +309,7 @@ export class Clientes {
       tasaCompensatoria: comp ? pct(comp.valorTasa) : 20,
       tasaMoratoria: mora ? pct(mora.valorTasa) : 10,
       diaCorte: cond?.diaCorte ?? 20,
+      horaCorte: cond?.horaCorte ?? '23:59:00',
       diaPago: cond?.diaPago ?? 26,
       username: user?.username ?? '',
       clave: '',
@@ -335,7 +342,7 @@ export class Clientes {
         limiteCredito: v.limiteCredito,
         plazoMaxMeses: v.plazoMaxMeses,
         diaCorte: v.diaCorte,
-        horaCorte: '23:59:59',
+        horaCorte: v.horaCorte.length === 5 ? `${v.horaCorte}:00` : v.horaCorte,
         diaPago: v.diaPago,
         tasas: [tasa('COMPENSATORIA', v.tasaCompensatoria), tasa('MORATORIA', v.tasaMoratoria)],
       },

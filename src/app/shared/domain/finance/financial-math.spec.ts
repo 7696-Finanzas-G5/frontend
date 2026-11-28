@@ -116,6 +116,27 @@ describe('Juego de datos 3: tasa nominal y compra posterior al corte', () => {
     expect(fechaPagoCiclo('2026-09-20T23:59', 20, 26)).toBe('2026-09-26');
     expect(fechaPagoCiclo('2026-12-21T08:00', 20, 26)).toBe('2027-01-26');
   });
+
+  it('respeta la hora de corte pactada en el mismo día de corte', () => {
+    expect(fechaPagoCiclo('2026-09-20T17:59', 20, 26, '18:00:00')).toBe('2026-09-26');
+    expect(fechaPagoCiclo('2026-09-20T18:00', 20, 26, '18:00:00')).toBe('2026-10-26');
+    expect(fechaPagoCiclo('2026-09-20T18:01', 20, 26, '18:00:00')).toBe('2026-10-26');
+    expect(fechaPagoCiclo('2026-09-20T23:59', 20, 26, null)).toBe('2026-09-26');
+  });
+
+  it.each([
+    ['2026-09-20T18:00:00.499999999', '2026-09-26'],
+    ['2026-09-20T18:00:00.500', '2026-10-26'],
+    ['2026-09-20T18:00:00.500000001', '2026-10-26'],
+  ])('respeta el instante exacto de corte con fracciones: %s', (compra, pago) => {
+    expect(fechaPagoCiclo(compra, 20, 26, '18:00:00.500')).toBe(pago);
+  });
+
+  it('aplica el corte exacto por defecto y en el cambio de año', () => {
+    expect(fechaPagoCiclo('2026-09-20T23:59:58.999999999', 20, 26)).toBe('2026-09-26');
+    expect(fechaPagoCiclo('2026-09-20T23:59:59', 20, 26)).toBe('2026-10-26');
+    expect(fechaPagoCiclo('2026-12-20T00:00', 20, 26, '00:00:00')).toBe('2027-01-26');
+  });
 });
 
 describe('Casos de validación de reglas del sistema', () => {

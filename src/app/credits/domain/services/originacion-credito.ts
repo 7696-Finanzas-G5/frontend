@@ -2,7 +2,6 @@
  * Servicio de dominio: originación de una venta al crédito.
  * Valida la condición de aceptación (6.3.5) y proyecta el pago a fin de mes o el cronograma francés.
  */
-import { parseYmd } from '../../../shared/domain/finance/dates';
 import {
   CronogramaFrances,
   ModalidadCompra,
@@ -10,6 +9,7 @@ import {
   cronogramaFrances,
   dias360,
   fechaCorteDeCiclo,
+  antesDelCorte,
   fechaPagoCiclo,
   interesPorDias,
   round2,
@@ -57,7 +57,7 @@ export function simularCompra(
   if (sol.cantidad <= 0) errores.push('La cantidad debe ser mayor a cero.');
   if (!producto.activo) errores.push('El producto está dado de baja.');
 
-  const fechaPago = fechaPagoCiclo(sol.fechaHoraCompra, cond.diaCorte, cond.diaPago);
+  const fechaPago = fechaPagoCiclo(sol.fechaHoraCompra, cond.diaCorte, cond.diaPago, cond.horaCorte);
   const fechaCorte = fechaCorteDeCiclo(fechaPago, cond.diaCorte);
   const result: SimulacionCompra = {
     errores,
@@ -65,8 +65,8 @@ export function simularCompra(
     disponible,
     fechaPago,
     fechaCorte,
-    // Compras hasta las 23:59 del día de corte de su mes entran al ciclo de ese mes
-    esAnteriorAlCorte: parseYmd(sol.fechaHoraCompra).d <= cond.diaCorte,
+    // Compras anteriores a la fecha y hora de corte entran al ciclo de ese mes
+    esAnteriorAlCorte: antesDelCorte(sol.fechaHoraCompra, cond.diaCorte, cond.horaCorte),
   };
 
   if (sol.modalidad === 'FIN_MES') {

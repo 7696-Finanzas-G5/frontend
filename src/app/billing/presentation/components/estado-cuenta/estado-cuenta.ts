@@ -110,6 +110,22 @@ export class EstadoCuenta {
     }
   }
 
+  /** Genera ahora el listado del ciclo (el backend lo rechaza si aún no pasó la fecha y hora de corte). */
+  protected async generarListado() {
+    const e = this.estado();
+    if (!e || this.procesando()) return;
+    this.error.set(null);
+    this.procesando.set(true);
+    try {
+      await this.estadoCuenta.generarListado(this.clienteId(), e.fechaPago);
+      this.version.update((v) => v + 1);
+    } catch (err) {
+      this.error.set((err as Error).message);
+    } finally {
+      this.procesando.set(false);
+    }
+  }
+
   protected async pagarCuota(cuota: Cuota, total: number) {
     if (this.procesando()) return;
     this.error.set(null);

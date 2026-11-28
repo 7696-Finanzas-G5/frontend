@@ -42,10 +42,29 @@
           @if (e.mora.diasMora > 0) { <span class="error">{{ e.mora.diasMora }} días de mora</span> }
         </div>
         <div class="field"><label>Tasa Compensatoria (i) <app-help title="Tasa compensatoria" text="Tasa pactada con la que se calcularon los intereses del ciclo." /></label>
-          <div class="ro"><app-icon name="percent" [size]="16" /> {{ e.condiciones.tasaCompensatoriaLabel }}</div></div>
+          <div class="ro"><app-icon name="percent" [size]="16" /> {{ e.condicionesMixtas ? 'Según las condiciones de cada compra' : e.condiciones.tasaCompensatoriaLabel }}</div></div>
         <div class="field"><label>Tasa Moratoria Pactada (I) <app-help title="Tasa moratoria" text="Se aplica sobre el total exigible por cada día de atraso." /></label>
-          <div class="ro"><app-icon name="percent" [size]="16" /> {{ e.condiciones.tasaMoratoriaLabel }} (TEDm: {{ e.condiciones.tedMoratoria | pct: 7 }})</div></div>
+          <div class="ro"><app-icon name="percent" [size]="16" /> @if (e.condicionesMixtas) { Según las condiciones de cada compra } @else { {{ e.condiciones.tasaMoratoriaLabel }} (TEDm: {{ e.condiciones.tedMoratoria | pct: 7 }}) }</div></div>
       </div>
+      @if (e.listado; as l) {
+        <div class="alert" [class.alert-info]="l.estado === 'PENDIENTE'" [class.alert-danger]="l.estado === 'VENCIDA'">
+          <app-icon name="receipt" />
+          <span>Listado de pago <strong>N° {{ l.id }}</strong> generado al corte del {{ l.fechaCorte | fecha }}
+            (registrado el {{ l.fechaGeneracion.slice(0, 10) | fecha }} a las {{ l.fechaGeneracion.slice(11, 16) }}) por
+            {{ l.totalExigible | money: moneda() }} ·
+            <strong>{{ l.estado === 'VENCIDA' ? 'Vencido: genera interés moratorio' : 'Pendiente de pago' }}</strong>
+            <app-help title="Listado al corte" text="El sistema genera automáticamente este listado al llegar la fecha y hora de corte, con las compras previas ordenadas por fecha y sus intereses hasta la fecha de pago pactada. La mora se agrega según la fecha efectiva de pago." />
+          </span>
+        </div>
+      } @else {
+        <div class="alert alert-info"><app-icon name="clock" />
+          <span>El listado de este ciclo se generará automáticamente al llegar el corte del {{ e.fechaCorte | fecha }}
+            ({{ e.condiciones.horaCorte ?? '23:59:59' }} h).</span>
+          @if (allowPayments()) {
+            <button type="button" class="btn btn-sm btn-outline" [disabled]="procesando()" (click)="generarListado()">Generar listado ahora</button>
+          }
+        </div>
+      }
     } @else {
       <p class="muted">No hay compras a fin de mes pendientes de pago.</p>
     }

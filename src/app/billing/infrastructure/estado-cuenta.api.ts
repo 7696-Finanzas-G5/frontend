@@ -15,6 +15,9 @@ export interface EstadoCicloView {
   liquidacion: LiquidacionFinDeMes;
   mora: ResultadoMora;
   condiciones: CondicionesFinancieras;
+  condicionesMixtas: boolean;
+  /** Listado de pago persistido al corte (proceso automático o manual); null si aún no se generó. */
+  listado: Liquidacion | null;
 }
 
 /** Cuota pendiente con la mora que tendría a la fecha efectiva. Solo la más antigua de cada compra es pagable. */
@@ -47,6 +50,10 @@ export class EstadoCuentaApi {
       if (e instanceof ApiError && e.status === 404) return null;
       throw e;
     }
+  }
+
+  generarListado(idCliente: number, fechaPago: string): Promise<Liquidacion> {
+    return this.api.post(`/clientes/${idCliente}/estado-cuenta/ciclos/${fechaPago}/listado`, {});
   }
 
   pagarCiclo(idCliente: number, fechaPago: string, fechaEfectiva: string, monto: number): Promise<ResultadoPago> {

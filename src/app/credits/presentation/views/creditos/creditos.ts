@@ -41,7 +41,7 @@ import { descripcionCompra } from '../../../domain/model/compra';
             </select>
           </div>
           <div class="field">
-            <label for="fc">Fecha y Hora de Compra <app-help title="Fecha de compra" text="Fecha y hora exacta de la venta. Se compara contra la fecha de corte (hasta las 23:59 del día de corte entra al ciclo actual)." /></label>
+            <label for="fc">Fecha y Hora de Compra <app-help title="Fecha de compra" text="Fecha y hora de Lima de la venta. Las compras anteriores a la fecha y hora de corte pactadas entran al ciclo actual; desde el corte pasan al siguiente." /></label>
             <input id="fc" class="input" type="datetime-local" formControlName="fechaHoraCompra" />
             @if (sim(); as s) { <span class="hint">@if (s.esAnteriorAlCorte) { Anterior a la Fecha de Corte: {{ s.fechaCorte | fecha }} } @else { Posterior al corte del mes: pasa al ciclo con corte {{ s.fechaCorte | fecha }} }</span> }
           </div>

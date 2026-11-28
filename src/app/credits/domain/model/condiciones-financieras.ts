@@ -16,6 +16,8 @@ export interface CondicionesFinancieras {
   readonly tedMoratoria: number;
   readonly tasaCompensatoriaLabel: string;
   readonly tasaMoratoriaLabel: string;
+  /** Hora límite del día de corte ("HH:mm:ss"); las compras posteriores pasan al ciclo siguiente. */
+  readonly horaCorte: string | null;
 }
 
 /** Vista del producto que se ofrece al crédito (traducida desde el contexto Catalog). */

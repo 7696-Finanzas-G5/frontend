@@ -56,13 +56,34 @@ export function dias360(fecha1: string, fecha2: string): number {
   return (b.y - a.y) * 360 + (b.m - a.m) * 30 + (Math.min(b.d, 30) - Math.min(a.d, 30));
 }
 
-/** 2. Fecha de pago según la fecha de corte (compras hasta las 23:59 del día de corte entran al ciclo actual). */
-export function fechaPagoCiclo(fechaHoraCompra: string, diaCorte: number, diaPago: number): string {
+/** Hora de corte por defecto cuando no se pactó una: fin del día de corte. */
+export const HORA_CORTE_DEFECTO = '23:59:59';
+
+/** "HH:mm[:ss[.fracción]]" → segundos del día, conservando las fracciones. */
+function segundosDelDia(hhmmss: string): number {
+  const [h = 0, mi = 0, s = 0] = hhmmss.split(':').map(Number);
+  return h * 3600 + mi * 60 + s;
+}
+
+/**
+ * Indica si una compra entra al ciclo del mes en que se hizo: es anterior al día de corte o es del mismo día de
+ * corte antes de la hora pactada. La hora exacta inicia el ciclo siguiente.
+ * `fechaHoraCompra` en formato ISO local ("2026-09-20T18:30").
+ */
+export function antesDelCorte(fechaHoraCompra: string, diaCorte: number, horaCorte: string | null = HORA_CORTE_DEFECTO): boolean {
+  const { d } = parseYmd(fechaHoraCompra);
+  if (d !== diaCorte) return d < diaCorte;
+  const hora = fechaHoraCompra.length > 10 ? fechaHoraCompra.slice(11) : '00:00:00';
+  return segundosDelDia(hora) < segundosDelDia(horaCorte || HORA_CORTE_DEFECTO);
+}
+
+/** 2. Fecha de pago según la fecha y hora de corte: compras posteriores al corte pasan al mes siguiente. */
+export function fechaPagoCiclo(fechaHoraCompra: string, diaCorte: number, diaPago: number, horaCorte: string | null = HORA_CORTE_DEFECTO): string {
   if (diaPago <= diaCorte) {
     throw new Error('El día de pago debe ser posterior al día de corte.');
   }
-  const { y, m, d } = parseYmd(fechaHoraCompra);
-  return toIso(makeDate(y, d <= diaCorte ? m : m + 1, diaPago));
+  const { y, m } = parseYmd(fechaHoraCompra);
+  return toIso(makeDate(y, antesDelCorte(fechaHoraCompra, diaCorte, horaCorte) ? m : m + 1, diaPago));
 }
 
 /** Fecha de corte del ciclo cuyo pago vence en `fechaPago` (mismo mes, ya que día de pago > día de corte). */

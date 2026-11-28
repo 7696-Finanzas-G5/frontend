@@ -40,6 +40,7 @@ export class CreditContextAdapter {
       tedMoratoria: tedMoratoria(c),
       tasaCompensatoriaLabel: tasaLabel(c, 'COMPENSATORIA'),
       tasaMoratoriaLabel: tasaLabel(c, 'MORATORIA'),
+      horaCorte: c.horaCorte ?? null,
     };
   }
 }

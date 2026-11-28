@@ -16,6 +16,7 @@ const cond: CondicionesFinancieras = {
   tedMoratoria: tasaEfectivaDiaria({ tipo: 'EFECTIVA', valor: 0.12, periodoDias: 360 }),
   tasaCompensatoriaLabel: 'TEA 24.0000%',
   tasaMoratoriaLabel: 'TEA 12.0000%',
+  horaCorte: '23:59:59',
 };
 const canasta: ProductoOfertado = { id: 1, descripcion: 'Canasta', precioCredito: 600, modalidadPermitida: 'AMBAS', activo: true };
 
